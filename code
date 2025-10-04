@@ -1,0 +1,125 @@
+import urllib.request
+import urllib.error
+import socket
+from datetime import datetime
+
+
+def check_website(url, timeout=5):
+    """
+    Check if a website is accessible
+
+    Args:
+        url: Website URL to check
+        timeout: Connection timeout in seconds (default: 5)
+
+    Returns:
+        tuple: (status, message, response_time)
+    """
+    # Add protocol if not present
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
+    try:
+        start_time = datetime.now()
+
+        # Create request with headers to mimic browser
+        req = urllib.request.Request(
+            url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        )
+
+        # Open URL with timeout
+        response = urllib.request.urlopen(req, timeout=timeout)
+
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds()
+
+        status_code = response.getcode()
+
+        return True, f"✓ Connected successfully (Status: {status_code})", response_time
+
+    except urllib.error.HTTPError as e:
+        return False, f"✗ HTTP Error: {e.code} - {e.reason}", None
+
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, socket.timeout):
+            return False, f"✗ Connection timeout after {timeout} seconds", None
+        else:
+            return False, f"✗ URL Error: {e.reason}", None
+
+    except socket.timeout:
+        return False, f"✗ Connection timeout after {timeout} seconds", None
+
+    except Exception as e:
+        return False, f"✗ Error: {str(e)}", None
+
+
+def main():
+    """Main function to run the website connectivity checker"""
+    print("=" * 60)
+    print("         WEBSITE CONNECTIVITY CHECKER")
+    print("=" * 60)
+    print()
+
+    # List of websites to check
+    websites = [
+        "google.com",
+        "github.com",
+        "python.org",
+        "example.com"
+    ]
+
+    print("Checking websites...\n")
+
+    results = []
+
+    for website in websites:
+        print(f"Checking: {website}...", end=" ")
+        success, message, response_time = check_website(website)
+
+        if response_time:
+            print(f"{message} - Response time: {response_time:.2f}s")
+        else:
+            print(message)
+
+        results.append({
+            'website': website,
+            'success': success,
+            'message': message,
+            'response_time': response_time
+        })
+
+    # Summary
+    print("\n" + "=" * 60)
+    print("SUMMARY")
+    print("=" * 60)
+
+    successful = sum(1 for r in results if r['success'])
+    failed = len(results) - successful
+
+    print(f"Total websites checked: {len(results)}")
+    print(f"Successful connections: {successful}")
+    print(f"Failed connections: {failed}")
+
+    # Option to check custom website
+    print("\n" + "=" * 60)
+
+    while True:
+        custom_url = input("\nEnter a website to check (or 'quit' to exit): ").strip()
+
+        if custom_url.lower() in ['quit', 'exit', 'q', '']:
+            print("\nThank you for using Website Connectivity Checker!")
+            break
+
+        success, message, response_time = check_website(custom_url)
+
+        if response_time:
+            print(f"{message} - Response time: {response_time:.2f}s")
+        else:
+            print(message)
+
+
+if __name__ == "__main__":
+    main()
